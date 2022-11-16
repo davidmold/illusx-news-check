@@ -1,0 +1,17 @@
+{
+  "name": "illusx-news-check",
+  "version": "1.0.0",
+  "description": "checks the number of news items for each tag on the news home page",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lantic Media",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-docdb": "^3.209.0",
+    "@aws-sdk/client-dynamodb": "^3.209.0",
+    "@aws-sdk/client-s3": "^3.210.0"
+  }
+}
