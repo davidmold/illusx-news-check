@@ -6,18 +6,7 @@ const REGION = "us-east-1" //e.g. "us-east-1"
 // Create an Amazon DynamoDB service client object.
 const client = new DynamoDBClient({ region: REGION })
 
-/*
-async function runQueryAll (params) {
-  let results = []
-  let items
-  do {
-      items =  await runQuery(params)
-      items.Items.forEach((item) => results.push(item))
-      params.ExclusiveStartKey  = items.LastEvaluatedKey
-  } while (typeof items.LastEvaluatedKey != 'undefined')
-  return results
-}
-*/
+
 
 async function countAll(params) {
   let results = []
@@ -51,9 +40,11 @@ async function getAllTags() {
   let results = []
   let items
   do {
-      items = await runQuery(parms)
-      items.Items.forEach((item) => results.push(item.tag.S))
-      parms.ExclusiveStartKey  = items.LastEvaluatedKey
+    items = await runQuery(parms)
+    items.Items.forEach((item) => {
+      results.push(item.tag.S.toLowerCase())
+    })
+    parms.ExclusiveStartKey  = items.LastEvaluatedKey
   } while (typeof items.LastEvaluatedKey != 'undefined')
   return results
 }
@@ -95,8 +86,9 @@ async function main () {
       let ct = getTagCount(res.tags, tag.toLowerCase())
       solved[tag] = ct
     }
-    console.log(solved)
+    console.log(JSON.stringify(solved))
     await s3m.storeJsonString('illusx-demo','news-index.json', solved)
+    await s3m.storeJsonString('illusx-demo-x1a','news-index.json', solved)
     console.log('posted')
   } catch (err) {
     console.error(err)

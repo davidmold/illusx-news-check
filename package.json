@@ -5,7 +5,10 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "update": "node index && npm run invalidate-beta && npm run invalidate-live",
+    "invalidate-beta": "aws cloudfront create-invalidation --distribution-id E1JNQ30OKMAQZY --paths \"/news-index.json\"",
+    "invalidate-live": "aws cloudfront create-invalidation --distribution-id EPYCLKOVPY2QP --paths \"/news-index.json\""
   },
   "author": "Lantic Media",
   "license": "ISC",
