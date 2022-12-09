@@ -6,7 +6,7 @@ const REGION = "us-east-1" //e.g. "us-east-1"
 // Create an Amazon DynamoDB service client object.
 const client = new DynamoDBClient({ region: REGION })
 
-
+const langs = ['KO', 'SX', 'BR', 'FR', 'JP', 'CN']
 
 async function countAll(params) {
   let results = []
@@ -19,6 +19,48 @@ async function countAll(params) {
       params.ExclusiveStartKey  = items.LastEvaluatedKey
   } while (typeof items.LastEvaluatedKey != 'undefined')
   return { count: mcount, tags: results }
+}
+
+//'news_id, published, title, summary, permalink, tags, tile_image, podcast_url',
+
+async function getAllStories(lang) {
+  let pk = 'news'
+  if(lang) {
+    pk = pk + lang
+  }
+  const params = {
+    KeyConditionExpression: 'pk = :q',
+    ExpressionAttributeValues: { 
+      ':q': { 'S': pk }
+    },
+    TableName: 'news'
+  }
+  let results = []
+  let items
+  do {
+      items = await runQuery(params)
+      items.Items.forEach((item) => {
+        let summary = ''
+        let body = ''
+        if(item.summary) {
+          summary = item.summary.S
+        }
+        if(item.body) {
+          body = item.body.S
+        }
+        results.push({ title: item.title.S, summary: summary, news_id: item.news_id.N, published: getStringItem(item.published), 
+          permalink: getStringItem(item.permalink), tags: getStringItem(item.tags), tile_image: getStringItem(item.tile_image), podcast_url: getStringItem(item.podcast_url) })
+      })
+      params.ExclusiveStartKey  = items.LastEvaluatedKey
+  } while (typeof items.LastEvaluatedKey != 'undefined')
+  return results
+}
+
+function getStringItem(val) {
+  if(!val) {
+    return ''
+  }
+  return val.S
 }
 
 function taggifyString(str) {
@@ -59,6 +101,7 @@ async function getAllNewsItems() {
     ExpressionAttributeValues: { 
       ':q': { 'S': 'news' }
     },
+    ProjectionExpression: 'news_id, published, title, summary, permalink, tags, tile_image, podcast_url',
     TableName: 'news'
   }
   return await countAll(parms)
@@ -77,6 +120,18 @@ function getTagCount(items, tag) {
 
 async function main () {
   try {
+    console.log('fetching EN')
+    let stories = await getAllStories()
+    console.log('storing EN')
+    await s3m.storeJsonString('illusx-demo','news-allEN.json', stories)
+    await s3m.storeJsonString('illusx-demo-x1a','news-allEN.json', stories)
+    for(let lang of langs) {
+      console.log('fetching', lang)
+      stories = await getAllStories(lang)
+      console.log('storing', lang)
+      await s3m.storeJsonString('illusx-demo','news-all' + lang + '.json', stories)
+      await s3m.storeJsonString('illusx-demo-x1a','news-all' + lang + '.json', stories)
+    }
     let res = await getAllNewsItems()
     const solved = {
       'all': res.count
@@ -90,6 +145,7 @@ async function main () {
     await s3m.storeJsonString('illusx-demo','news-index.json', solved)
     await s3m.storeJsonString('illusx-demo-x1a','news-index.json', solved)
     console.log('posted')
+    
   } catch (err) {
     console.error(err)
   }
